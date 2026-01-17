@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Michigan 2048</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #00274C;
+      color: #FFCB05;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    #score-container {
+      font-size: 24px;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      border-radius: 5px;
+      background-color: #FFCB05;
+      color: #00274C;
+    }
+    #grid-container {
+      display: grid;
+      grid-template-columns: repeat(4, 80px);
+      grid-gap: 10px;
+      padding: 10px;
+      background-color: #00274C;
+      border-radius: 5px;
+    }
+    .grid-cell {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 28px;
+      font-weight: bold;
+      border-radius: 5px;
+      color: #00274C;
+      background-color: #FFCB05;
+    }
+    .grid-cell[data-value="2"] { background-color: #F7D358; }
+    .grid-cell[data-value="4"] { background-color: #F5B041; }
+    .grid-cell[data-value="8"] { background-color: #F39C12; color: #FFF; }
+    .grid-cell[data-value="16"] { background-color: #DC7633; color: #FFF; }
+    .grid-cell[data-value="32"] { background-color: #E67E22; color: #FFF; }
+    .grid-cell[data-value="64"] { background-color: #D35400; color: #FFF; }
+    .grid-cell[data-value="128"] { background-color: #B9770E; color: #FFF; }
+    .grid-cell[data-value="256"] { background-color: #A04000; color: #FFF; }
+    .grid-cell[data-value="512"] { background-color: #884EA0; color: #FFF; }
+    .grid-cell[data-value="1024"] { background-color: #512E5F; color: #FFF; }
+    .grid-cell[data-value="2048"] { background-color: #2C3E50; color: #FFF; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <h1>Michigan 2048</h1>
+    <div id="score-container">Score: <span id="score">0</span></div>
+    <div id="grid-container">
+      <!-- 16 cells -->
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+      <div class="grid-cell" data-value="0"></div>
+    </div>
+  </div>
+
+  <script>
+    const gridSize = 4;
+    let grid = [];
+    let score = 0;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setup();
+      addTile();
+      addTile();
+      updateBoard();
+      document.addEventListener('keydown', handleKeyPress);
+    });
+
+    function setup() {
+      grid = Array(gridSize * gridSize).fill(0);
+    }
+
+    function addTile() {
+      let emptyCells = [];
+      grid.forEach((cell, index) => {
+        if (cell === 0) emptyCells.push(index);
+      });
+
+      if (emptyCells.length > 0) {
+        const randomIndex = Math.floor(Math.random() * emptyCells.length);
+        grid[emptyCells[randomIndex]] = Math.random() < 0.9 ? 2 : 4;
+      }
+    }
+
+    function updateBoard() {
+      const cells = document.querySelectorAll('.grid-cell');
+      cells.forEach((cell, index) => {
+        const value = grid[index];
+        cell.textContent = value === 0 ? '' : value;
+        cell.setAttribute('data-value', value);
+      });
+      document.getElementById('score').textContent = score;
+    }
+
+    function handleKeyPress(event) {
+      let moved = false;
+      switch (event.key) {
+        case 'ArrowUp': moved = moveUp(); break;
+        case 'ArrowDown': moved = moveDown(); break;
+        case 'ArrowLeft': moved = moveLeft(); break;
+        case 'ArrowRight': moved = moveRight(); break;
+      }
+      if (moved) {
+        addTile();
+        updateBoard();
+      }
+    }
+
+    function slide(row) {
+      let arr = row.filter(val => val);
+      return arr.concat(Array(gridSize - arr.length).fill(0));
+    }
+
+    function combine(row) {
+      for (let i = 0; i < row.length - 1; i++) {
+        if (row[i] === row[i + 1] && row[i] !== 0) {
+          row[i] *= 2;
+          row[i + 1] = 0;
+          score += row[i];
+        }
+      }
+      return row;
+    }
+
+    function moveLeft() {
+      let moved = false;
+      for (let i = 0; i < gridSize; i++) {
+        let row = grid.slice(i * gridSize, i * gridSize + gridSize);
+        const newRow = slide(combine(slide(row)));
+        grid.splice(i * gridSize, gridSize, ...newRow);
+        if (row.toString() !== newRow.toString()) moved = true;
+      }
+      return moved;
+    }
+
+    function moveRight() {
+      let moved = false;
+      for (let i = 0; i < gridSize; i++) {
+        let row = grid.slice(i * gridSize, i * gridSize + gridSize).reverse();
+        const newRow = slide(combine(slide(row))).reverse();
+        grid.splice(i * gridSize, gridSize, ...newRow);
+        if (row.reverse().toString() !== newRow.toString()) moved = true;
+      }
+      return moved;
+    }
+
+    function moveUp() {
+      let moved = false;
+      for (let i = 0; i < gridSize; i++) {
+        let row = [];
+        for (let j = 0; j < gridSize; j++) row.push(grid[i + j * gridSize]);
+        const newRow = slide(combine(slide(row)));
+        for (let j = 0; j < gridSize; j++) {
+          if (grid[i + j * gridSize] !== newRow[j]) moved = true;
+          grid[i + j * gridSize] = newRow[j];
+        }
+      }
+      return moved;
+    }
+
+    function moveDown() {
+      let moved = false;
+      for (let i = 0; i < gridSize; i++) {
+        let row = [];
+        for (let j = 0; j < gridSize; j++) row.push(grid[i + j * gridSize]);
+        const newRow = slide(combine(slide(row.reverse()))).reverse();
+        for (let j = 0; j < gridSize; j++) {
+          if (grid[i + j * gridSize] !== newRow[j]) moved = true;
+          grid[i + j * gridSize] = newRow[j];
+        }
+      }
+      return moved;
+    }
+  </script>
+</body>
+</html>
